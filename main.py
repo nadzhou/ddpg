@@ -1,16 +1,35 @@
-# This is a sample Python script.
+import gym
+import numpy as np
 
-# Press Shift+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
+from ddpg import Agent
 
+env = gym.make('LunarLanderContinuous-v2')
+agent = Agent(alpha=0.00025, beta=0.00025, input_dims=[8], tau=0.01, env=env, batch_size=64, layer1_size=400,
+              layer2_size=300, n_actions=2)
 
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press Ctrl+F8 to toggle the breakpoint.
+np.random.seed(0)
 
+score_history = []
 
-# Press the green button in the gutter to run the script.
-if __name__ == '__main__':
-    print_hi('PyCharm')
+for i in range(1000):
+    done = False
+    score = 0
+    obs = env.reset()
 
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+    while not done:
+        act = agent.choose_action(obs)
+        new_state, reward, done, info = env.step(act)
+        agent.remember(obs, act, reward, new_state, int(done))
+
+        agent.learn()
+        score += reward
+        obs = new_state
+
+    score_history.append(score)
+    print(f'Episode {i}, score: {score}')
+
+    if i % 25 == 0:
+        agent.save_model()
+
+    # filename = 'lunar-lander.png'
+    # plotLearning(score_history, filename, window=100)
